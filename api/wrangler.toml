@@ -5,5 +5,5 @@ compatibility_date = "2024-06-10"
 [[d1_databases]]
 binding = "DB"
 database_name = "samarkand-guide-db"
-database_id = "local-d1-db"
+database_id = "507752b8-7648-48d0-9814-bb2a431f1d50"
 migrations_dir = "migrations"
