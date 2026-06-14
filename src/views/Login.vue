@@ -94,12 +94,16 @@ const isLoading = ref(false)
 const router = useRouter()
 const { login } = useAuth()
 
+const API_BASE = import.meta.env.DEV
+  ? 'http://localhost:8787'
+  : 'https://samarkand-guide-api.neopia-uz.workers.dev'
+
 const handleLogin = async () => {
   errorMsg.value = ''
   isLoading.value = true
   
   try {
-    const response = await fetch('http://localhost:8787/api/auth/login', {
+    const response = await fetch(`${API_BASE}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
