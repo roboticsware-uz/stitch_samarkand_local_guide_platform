@@ -43,7 +43,27 @@
       </div>
 
       <!-- Desktop Button -->
-      <div class="hidden md:block">
+      <div class="hidden md:flex items-center space-x-6">
+        <template v-if="isAuthenticated">
+          <span class="text-on-surface-variant dark:text-surface-variant text-sm font-medium max-w-[150px] truncate" :title="userEmail || ''">
+            {{ userEmail }}
+          </span>
+          <button
+            @click="logout"
+            class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors text-body-md font-body-md"
+          >
+            Sign Out
+          </button>
+        </template>
+        <template v-else>
+          <router-link
+            to="/login"
+            class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors text-body-md font-body-md"
+          >
+            Sign In
+          </router-link>
+        </template>
+
         <button
           class="bg-on-primary-fixed text-tertiary-fixed border border-tertiary-container px-6 py-3 rounded hover:bg-primary-container transition-colors duration-300 font-label-caps text-label-caps flex items-center gap-2"
         >
@@ -91,6 +111,27 @@
           @click="isMenuOpen = false"
           >Testimonials</a
         >
+        <hr class="border-outline-variant/30" />
+        <template v-if="isAuthenticated">
+          <span class="text-on-surface-variant dark:text-surface-variant text-sm font-medium block truncate">
+            {{ userEmail }}
+          </span>
+          <button
+            @click="handleMobileLogout"
+            class="text-left text-on-surface-variant dark:text-surface-variant hover:text-primary transition-colors text-body-md font-body-md"
+          >
+            Sign Out
+          </button>
+        </template>
+        <template v-else>
+          <router-link
+            to="/login"
+            class="text-left text-on-surface-variant dark:text-surface-variant hover:text-primary transition-colors text-body-md font-body-md"
+            @click="isMenuOpen = false"
+          >
+            Sign In
+          </router-link>
+        </template>
         <button
           class="w-full bg-on-primary-fixed text-tertiary-fixed border border-tertiary-container px-6 py-3 rounded hover:bg-primary-container transition-colors duration-300 font-label-caps text-label-caps flex items-center justify-center gap-2"
           @click="isMenuOpen = false"
@@ -104,10 +145,17 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useAuth } from '../utils/auth'
 
 const isMenuOpen = ref(false)
+const { isAuthenticated, userEmail, logout } = useAuth()
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
+}
+
+const handleMobileLogout = () => {
+  logout()
+  isMenuOpen.value = false
 }
 </script>
