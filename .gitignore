@@ -34,3 +34,8 @@ dist-ssr/
 .env
 .env.local
 .env.*.local
+
+# Wrangler state / Local database
+.wrangler/
+.dev.vars
+
