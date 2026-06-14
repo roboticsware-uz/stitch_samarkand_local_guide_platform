@@ -397,6 +397,15 @@ const submitWizard = async () => {
     clearInterval(interval)
     // Fallback: Mock match if API fails completely to ensure excellent user experience
     setTimeout(() => {
+      let mockReason = ''
+      if (language.value === 'Korean') {
+        mockReason = 'Amir 가이드는 고객님께서 선택하신 한국어로 대화가 완벽히 가능하여 편안한 투어를 보장합니다. 역사 고고학 학위를 소지하여 사마르칸트 유적지에 얽힌 이야기를 깊이 있게 들려줄 수 있는 최적의 가이드입니다.'
+      } else if (language.value === 'Russian') {
+        mockReason = 'Гид Amir отлично говорит по-русски, обеспечивая легкое и непринужденное общение во время тура. Его академическая степень в области археологии позволит вам получить самые глубокие и интересные знания об истории Самарканда.'
+      } else {
+        mockReason = 'Amir is fully fluent in English, facilitating easy and clear communication during your tour. With a master degree in archaeology, he will offer profound historical insights that align perfectly with your interest.'
+      }
+
       matchResult.value = {
         matchedGuide: {
           id: 1,
@@ -409,7 +418,7 @@ const submitWizard = async () => {
           profile_image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC3z1W6lQk6Ugo3AARtkdPMNk-buBdHB1QnCNjXP_urSdJCD0uzi3x7FyYKcqzju72O0MnO5Ji5W1sQ7p55WHVXewPtrjCMCb_r3C3xiWjYsFsaJp8bTWkY4Ur1hxnCXYEFtBItEWhtHD-uMPk_YppdTYN4Wm1jLVfTzf6tZxM-tq37UcIwFixJCShPdtiEdI_NRaAmTHdfDFIVZKPtbMwmc7mJXFkDbRpnThFvDXOODYtdOW3pllmBStbxNf-XHUiBHgnF3mgn377Q'
         },
         matchScore: 95,
-        reason: 'Amir 가이드는 한국어와 영어 소통이 완벽하며, 역사 고고학 학위를 소지하여 사마르칸트의 숨겨진 유적지 역사를 심도 있게 설명해 드립니다. 가장 선호하시는 역사 취향에 가장 추천하는 전문가입니다.',
+        reason: mockReason,
         isFallback: true
       }
       step.value = 6

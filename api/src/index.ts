@@ -148,6 +148,13 @@ Bio: ${g.bio}`
     }).join('\n\n')
 
     // 3. Define the prompt for Gemini
+    const languageMap: Record<string, string> = {
+      Korean: 'Korean (한국어)',
+      English: 'English',
+      Russian: 'Russian (Русский)'
+    }
+    const targetLanguage = languageMap[language] || 'English'
+
     const systemPrompt = `You are a professional luxury travel concierge matching tourists with the perfect guide in Samarkand, Uzbekistan.
     
 We have a pool of local guides. Below are their details:
@@ -166,7 +173,7 @@ The JSON object must follow this format:
 {
   "matchedGuideId": <number matching the chosen guide's ID>,
   "matchScore": <number between 50 and 100 indicating match percentage>,
-  "reason": "<A 2-3 sentence personalized explanation in Korean (since the user is Korean-speaking) explaining WHY they are matched. Highlight their speaking language and interests, addressing the user directly in a warm, polite tone.>"
+  "reason": "<A 2-3 sentence personalized explanation in ${targetLanguage} explaining WHY they are matched. You MUST explicitly state that they are matched because they speak the user's selected language (${targetLanguage}) and explain how this language capability will make their tour of Samarkand more comfortable and immersive. Address the user directly in a warm, polite, and professional tone. Do not mention system-level variables.>"
 }`
 
     // 4. Check if Gemini API key exists
@@ -196,8 +203,14 @@ The JSON object must follow this format:
         }
       }
       
-      const langText = language === 'Korean' ? '한국어' : language === 'English' ? '영어' : '러시아어'
-      const fallbackReason = `${bestGuide.name} 가이드는 ${langText}로 원활하게 의사소통이 가능하며, 사용자님의 취향(${interest})에 적합한 투어를 진행할 수 있습니다. Samarkand Luxury Guide가 보증하는 전문가입니다.`
+      let fallbackReason = ''
+      if (language === 'Korean') {
+        fallbackReason = `${bestGuide.name} 가이드는 고객님께서 선택하신 언어인 한국어로 원활하게 소통할 수 있어 여행 내내 깊이 있고 편안한 대화가 가능합니다. 또한 고객님의 관심사인 '${interest}' 투어와 '${vibe}' 스타일의 맞춤형 경험을 제공하기에 가장 이상적인 가이드로 추천해 드립니다.`
+      } else if (language === 'Russian') {
+        fallbackReason = `Гид ${bestGuide.name} свободно владеет выбранным вами русским языком, что сделает ваше путешествие по Самарканду максимально комфортным и увлекательным. Он отлично подходит для темы "${interest}" и соответствует вашим предпочтениям к стилю поездки.`
+      } else {
+        fallbackReason = `Guide ${bestGuide.name} communicates fluently in your selected language, English, ensuring a seamless and clear experience during your tour. They are also a perfect match for your interest in "${interest}" and align well with your requested vibe.`
+      }
       
       return c.json({
         matchedGuide: bestGuide,

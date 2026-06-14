@@ -64,11 +64,12 @@
           </router-link>
         </template>
 
-        <button
+        <router-link
+          to="/match"
           class="bg-on-primary-fixed text-tertiary-fixed border border-tertiary-container px-6 py-3 rounded hover:bg-primary-container transition-colors duration-300 font-label-caps text-label-caps flex items-center gap-2"
         >
-          Book a Tour
-        </button>
+          Find My Guide
+        </router-link>
       </div>
 
       <!-- Mobile Menu Button -->
@@ -132,12 +133,13 @@
             Sign In
           </router-link>
         </template>
-        <button
+        <router-link
+          to="/match"
           class="w-full bg-on-primary-fixed text-tertiary-fixed border border-tertiary-container px-6 py-3 rounded hover:bg-primary-container transition-colors duration-300 font-label-caps text-label-caps flex items-center justify-center gap-2"
           @click="isMenuOpen = false"
         >
-          Book a Tour
-        </button>
+          Find My Guide
+        </router-link>
       </div>
     </transition>
   </nav>
