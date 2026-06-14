@@ -3,6 +3,7 @@ import App from './App.vue'
 import Home from './views/Home.vue'
 import Login from './views/Login.vue'
 import Signup from './views/Signup.vue'
+import MatchWizard from './views/MatchWizard.vue'
 import './index.css'
 
 export const createApp = ViteSSG(
@@ -23,6 +24,11 @@ export const createApp = ViteSSG(
         path: '/signup',
         name: 'Signup',
         component: Signup,
+      },
+      {
+        path: '/match',
+        name: 'Match',
+        component: MatchWizard,
       },
     ],
   },

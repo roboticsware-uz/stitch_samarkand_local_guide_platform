@@ -25,7 +25,8 @@
       >
         당신만의 사마르칸트를 보여줄 로컬 가이드를 만나보세요
       </p>
-      <button
+      <router-link
+        to="/match"
         class="bg-on-primary-fixed text-tertiary-fixed border border-tertiary-container px-8 py-4 rounded hover:bg-primary-container transition-colors duration-300 font-label-caps text-label-caps flex items-center gap-2 shadow-lg group"
       >
         Find My Guide
@@ -33,7 +34,7 @@
           class="material-symbols-outlined group-hover:translate-x-1 transition-transform"
           >search</span
         >
-      </button>
+      </router-link>
     </div>
   </header>
 </template>

@@ -4,6 +4,7 @@ import { sign } from 'hono/jwt'
 
 type Bindings = {
   DB: D1Database
+  GEMINI_API_KEY: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -121,4 +122,142 @@ app.post('/api/auth/login', async (c) => {
   }
 })
 
+// Match endpoint
+app.post('/api/auth/match', async (c) => {
+  try {
+    const { interest, language, vibe, specialRequest } = await c.req.json()
+    
+    // 1. Fetch guides from D1
+    const { results: guides } = await c.env.DB.prepare(
+      'SELECT id, name, languages, specialties, bio, vibe, rating, profile_image FROM guides'
+    ).all<any>()
+    
+    if (!guides || guides.length === 0) {
+      return c.json({ error: 'No guides available in database' }, 404)
+    }
+
+    // 2. Format guides pool for Gemini
+    const guidesFormatted = guides.map(g => {
+      return `Guide ID: ${g.id}
+Name: ${g.name}
+Languages: ${g.languages}
+Specialties: ${g.specialties}
+Vibe: ${g.vibe}
+Rating: ${g.rating}
+Bio: ${g.bio}`
+    }).join('\n\n')
+
+    // 3. Define the prompt for Gemini
+    const systemPrompt = `You are a professional luxury travel concierge matching tourists with the perfect guide in Samarkand, Uzbekistan.
+    
+We have a pool of local guides. Below are their details:
+
+${guidesFormatted}
+
+Here are the traveler's preferences:
+- Primary Interest: ${interest}
+- Preferred Language: ${language}
+- Vibe/Style: ${vibe}
+- Special Request/Notes: ${specialRequest || 'None'}
+
+Your task is to select the BEST matching guide from the pool above.
+You must respond ONLY with a JSON object. Do not include markdown formatting backticks (like \`\`\`json ... \`\`\`) or any text outside of the JSON object.
+The JSON object must follow this format:
+{
+  "matchedGuideId": <number matching the chosen guide's ID>,
+  "matchScore": <number between 50 and 100 indicating match percentage>,
+  "reason": "<A 2-3 sentence personalized explanation in Korean (since the user is Korean-speaking) explaining WHY they are matched. Highlight their speaking language and interests, addressing the user directly in a warm, polite tone.>"
+}`
+
+    // 4. Check if Gemini API key exists
+    const apiKey = c.env.GEMINI_API_KEY
+    if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+      // Deterministic Fallback Mode
+      let bestGuide = guides[0]
+      let maxScore = 50
+      
+      for (const g of guides) {
+        let score = 70
+        // Lang check
+        const langs = JSON.parse(g.languages || '[]')
+        if (langs.includes(language)) score += 15
+        
+        // Specialty check
+        const specs = JSON.parse(g.specialties || '[]')
+        if (specs.includes(interest)) score += 10
+        
+        // Vibe check
+        const vibes = JSON.parse(g.vibe || '[]')
+        if (vibes.includes(vibe)) score += 5
+        
+        if (score > maxScore) {
+          maxScore = score
+          bestGuide = g
+        }
+      }
+      
+      const langText = language === 'Korean' ? '한국어' : language === 'English' ? '영어' : '러시아어'
+      const fallbackReason = `${bestGuide.name} 가이드는 ${langText}로 원활하게 의사소통이 가능하며, 사용자님의 취향(${interest})에 적합한 투어를 진행할 수 있습니다. Samarkand Luxury Guide가 보증하는 전문가입니다.`
+      
+      return c.json({
+        matchedGuide: bestGuide,
+        matchScore: maxScore,
+        reason: fallbackReason,
+        isFallback: true
+      })
+    }
+
+    // 5. Call Gemini API
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+    const response = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: systemPrompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          responseMimeType: 'application/json'
+        }
+      })
+    })
+
+    if (!response.ok) {
+      const errText = await response.text()
+      throw new Error(`Gemini API returned error: ${errText}`)
+    }
+
+    const resData = await response.json<any>()
+    const contentText = resData.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!contentText) {
+      throw new Error('Invalid response from Gemini API')
+    }
+
+    const cleanJsonText = contentText.replace(/```json/g, '').replace(/```/g, '').trim()
+    const matchResult = JSON.parse(cleanJsonText)
+
+    // Find the guide profile
+    const matchedGuide = guides.find(g => g.id === matchResult.matchedGuideId) || guides[0]
+
+    return c.json({
+      matchedGuide,
+      matchScore: matchResult.matchScore,
+      reason: matchResult.reason,
+      isFallback: false
+    })
+
+  } catch (err: any) {
+    return c.json({ error: err.message || 'Matching failed' }, 500)
+  }
+})
+
 export default app
+
