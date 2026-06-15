@@ -122,6 +122,70 @@ app.post('/api/auth/login', async (c) => {
   }
 })
 
+// Google OAuth Login/Signup endpoint
+app.post('/api/auth/google', async (c) => {
+  try {
+    const { idToken } = await c.req.json()
+    if (!idToken) {
+      return c.json({ error: 'ID Token is required' }, 400)
+    }
+
+    // Verify Google ID Token via Google's tokeninfo API
+    const verifyUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
+    const verifyRes = await fetch(verifyUrl)
+    if (!verifyRes.ok) {
+      return c.json({ error: 'Invalid Google token' }, 401)
+    }
+    
+    const payload = await verifyRes.json<any>()
+    
+    // Verify client ID (audience) matches user's client ID
+    const googleClientId = '506066541375-tlqhivi30abpkrt75n00c0r1n607o35b.apps.googleusercontent.com'
+    if (payload.aud !== googleClientId) {
+      return c.json({ error: 'Unauthorized: Invalid client ID' }, 401)
+    }
+
+    const email = payload.email?.toLowerCase()
+    if (!email) {
+      return c.json({ error: 'Email not provided by Google' }, 400)
+    }
+
+    // Check if user exists in D1 database
+    let user = await c.env.DB.prepare(
+      'SELECT email FROM users WHERE email = ?'
+    ).bind(email).first<{ email: string }>()
+
+    if (!user) {
+      // Create user with a random dummy password hash
+      const randomPassword = crypto.randomUUID()
+      const dummyHash = await hashPassword(randomPassword)
+      
+      const insertResult = await c.env.DB.prepare(
+        'INSERT INTO users (email, password_hash) VALUES (?, ?)'
+      ).bind(email, dummyHash).run()
+
+      if (!insertResult.success) {
+        return c.json({ error: 'Failed to create user' }, 500)
+      }
+    }
+
+    // Generate JWT for session
+    const jwtPayload = {
+      email,
+      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 24 hours
+    }
+    const token = await sign(jwtPayload, JWT_SECRET)
+
+    return c.json({
+      message: 'Login successful via Google',
+      token,
+      user: { email }
+    })
+  } catch (err: any) {
+    return c.json({ error: err.message || 'Server error' }, 500)
+  }
+})
+
 // Match endpoint
 app.post('/api/auth/match', async (c) => {
   try {

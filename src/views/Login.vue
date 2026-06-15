@@ -65,6 +65,21 @@
           </button>
         </form>
 
+        <!-- Divider -->
+        <div class="relative my-6 flex items-center justify-center">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-on-primary-fixed/10"></div>
+          </div>
+          <span class="relative bg-surface-container-lowest px-4 text-xs font-body-md text-on-surface-variant uppercase tracking-wider">
+            Or continue with
+          </span>
+        </div>
+
+        <!-- Google Sign-In Button Container -->
+        <div class="flex justify-center mb-6">
+          <div id="google-signin-btn" class="w-full"></div>
+        </div>
+
         <!-- Redirect to Signup -->
         <div class="mt-6 text-center text-sm font-body-md text-on-surface-variant">
           Don't have an account? 
@@ -80,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../utils/auth'
 import TopNavBar from '../components/TopNavBar.vue'
@@ -131,4 +146,56 @@ const handleLogin = async () => {
     isLoading.value = false
   }
 }
+
+const handleCredentialResponse = async (response: any) => {
+  errorMsg.value = ''
+  isLoading.value = true
+  
+  try {
+    const idToken = response.credential
+    const res = await fetch(`${API_BASE}/api/auth/google`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ idToken })
+    })
+
+    const data = await res.json()
+    if (!res.ok) {
+      throw new Error(data.error || 'Google Login failed')
+    }
+
+    login(data.token, data.user.email)
+    router.push('/')
+  } catch (err: any) {
+    errorMsg.value = err.message || 'An error occurred during Google Sign-in.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  const initGoogle = () => {
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      (window as any).google.accounts.id.initialize({
+        client_id: '506066541375-tlqhivi30abpkrt75n00c0r1n607o35b.apps.googleusercontent.com',
+        callback: handleCredentialResponse
+      });
+      (window as any).google.accounts.id.renderButton(
+        document.getElementById('google-signin-btn'),
+        { 
+          theme: 'outline', 
+          size: 'large', 
+          width: '100%',
+          text: 'signin_with',
+          shape: 'rectangular'
+        }
+      );
+    } else {
+      setTimeout(initGoogle, 100)
+    }
+  }
+  initGoogle()
+})
 </script>
